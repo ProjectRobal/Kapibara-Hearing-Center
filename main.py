@@ -23,6 +23,8 @@ from tensorflow.keras import models
 
 tf.config.run_functions_eagerly(True)
 
+from kapibara_audio import KapibaraAudio
+
 SAMPLE_RATE=16000
 
 OUTPUT_SIZE=6
@@ -86,6 +88,8 @@ def load_audio(file,dir):
 
     if audio.shape[0]>BUFFER_SIZE:
         audio=tf.slice(audio,0,BUFFER_SIZE)
+
+    return audio
 
 
 def load_and_prepare_audio(files,dir):

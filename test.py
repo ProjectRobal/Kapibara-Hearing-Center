@@ -1,41 +1,37 @@
-import os
-import pathlib
-
-import matplotlib.pyplot as plt
-import numpy as np
 import tensorflow as tf
-import copy
+import matplotlib.pyplot as plt
 
-from tensorflow.keras import layers
-from tensorflow.keras import models
+from microphone import Microphone
 
-BUFFER_SIZE = 16000*2
+from kapibara_audio import KapibaraAudio
 
-def load_and_prepare_audio(path):
-    audio, _ = tf.audio.decode_wav(contents=tf.io.read_file(path))
 
-    audio=tf.squeeze(audio, axis=-1)
+mic=Microphone(chunk=16000)
 
-    if audio.shape[0]<BUFFER_SIZE:
-        zeros=tf.zeros(BUFFER_SIZE-audio.shape[0])
-        audio=tf.concat([audio,zeros],0)
+model=KapibaraAudio('./best_model')
 
-    if audio.shape[0]>BUFFER_SIZE:
-        audio=tf.slice(audio,0,BUFFER_SIZE)
 
-    audio=tf.cast(audio,dtype=tf.float32)
+try:
+    while True:
 
-    spectrogram=tf.signal.stft(audio,frame_length=255,frame_step=128)
+        audio=mic.record(2)
 
-    spectrogram = tf.abs(spectrogram)
+        audio=tf.cast(audio,dtype=tf.float32)
 
-    spectrogram = spectrogram[..., tf.newaxis]
-    return spectrogram
+        with open("samp.wav","wb") as f:
+            out=tf.audio.encode_wav(tf.reshape(audio/2**16-1,[model.buffer_size,1]),16000)
+            f.write(out.numpy())
 
-spectrogram=load_and_prepare_audio('./samp194.wav')
+        plt.plot(audio)
 
-model=tf.keras.models.load_model('./best_model')
+        plt.show()
 
-prediction = model(spectrogram[None,...])
+        print(model.input(audio))
 
-print(prediction)
+        print("Press any key")
+        q=input()
+
+        if q=='q':
+            break
+except KeyboardInterrupt:
+    print("Finished")
