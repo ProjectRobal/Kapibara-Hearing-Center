@@ -9,8 +9,10 @@ BUFFER_SIZE = 16000*2
 
 class KapibaraAudio:
     '''path - a path to a model'''
-    def __init__(self,path):
-        self.model=tf.keras.models.load_model(path)
+    def __init__(self,path=None):
+        self.model=None
+        if path is not None:
+            self.model=tf.keras.models.load_model(path)
         self.answers=['neutral','disturbing','unpleasent','pleasent','scary','irritanting']
         self.sample_rate=16000
         self.buffer_size=BUFFER_SIZE
@@ -27,13 +29,13 @@ class KapibaraAudio:
             for line in f:
                 objs=line.split(delimiter)
 
-            for i in range(1,len(objs)):
-                objs[i]=float(objs[i])
+                for i in range(1,len(objs)):
+                    objs[i]=float(objs[i])
 
-            audio.append(objs[0])
+                audio.append(objs[0])
 
-            label.append(tf.argmax(objs[1:]))
-
+                label.append(tf.argmax(objs[1:]))
+        
         return (audio,label)
 
 
@@ -48,6 +50,8 @@ class KapibaraAudio:
             audio=self.load_wav(path+"/wavs/"+file+".wav")
 
             spectrograms.append(self.gen_spectogram(audio))
+
+        print("Samples count: ",len(spectrograms))
 
         dataset=tf.data.Dataset.from_tensor_slices((spectrograms,labels))
 
@@ -102,11 +106,9 @@ class KapibaraAudio:
             callbacks=tf.keras.callbacks.EarlyStopping(verbose=1, patience=2),
             )
 
-        metrics = history.history
+        model.save(save_path)
 
-        model.save("./best_model")
-
-        return metrics
+        return history
 
 
     '''generate spectogram'''
@@ -117,7 +119,7 @@ class KapibaraAudio:
         spectrogram = tf.abs(spectrogram)
 
         spectrogram = spectrogram[..., tf.newaxis]
-        return spectrogram[None,...]
+        return spectrogram
 
     def get_result(self,prediction):
 
@@ -152,6 +154,13 @@ class KapibaraAudio:
         audio, _ = tf.audio.decode_wav(contents=tf.io.read_file(path))
 
         audio=tf.squeeze(audio, axis=-1)
+
+        if audio.shape[0]<BUFFER_SIZE:
+            zeros=tf.zeros(BUFFER_SIZE-audio.shape[0])
+            audio=tf.concat([audio,zeros],0)
+
+        if audio.shape[0]>BUFFER_SIZE:
+            audio=tf.slice(audio,0,BUFFER_SIZE)
 
         audio=tf.cast(audio,dtype=tf.float32)
 
