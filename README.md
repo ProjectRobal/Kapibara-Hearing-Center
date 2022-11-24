@@ -1,20 +1,24 @@
 Model maszynowy który analizuję próbki dźwięku i decyduję czy dźwięk jest:
 
 -straszny
--nieprzyjemny
 -przyjemny
--wnerwiający (wywołujący agresję)
--neutralny/ciekawy
+-wnerwiający (wywołujący agresję) - powodujący gniew
+-neutralny
 -niepokojący (naprzykład szum)
+
+
 
 Uczucia Kapibary:
 - radość
-- strach
+- strach[^1]
 - smutek
-- złość
-- ból
+- gniew
 - przyjemność
-- konfuzja ?
+- zaniepokojenie 
 
+[^1]:ból ma prowokować strach
 
+Changelog:
+
+- kategoria nieprzyjemny i niepokojący zostają połączone
 
