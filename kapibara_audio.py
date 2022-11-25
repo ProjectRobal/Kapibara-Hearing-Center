@@ -96,6 +96,8 @@ class KapibaraAudio:
         # Fit the state of the layer to the spectrograms
         # with `Normalization.adapt`.
         norm_layer.adapt(data=dataset.map(map_func=lambda spec, label: spec))
+        
+        norm_layer(resizing)
 
         conv1=layers.Conv2D(64, 3, activation='relu')(resizing)
 
@@ -206,7 +208,8 @@ class KapibaraAudio:
         if audio.shape[0]>BUFFER_SIZE:
             audio=tf.slice(audio,0,BUFFER_SIZE)
 
-        spectrogram=self.gen_spectogram(audio)[None,..., tf.newaxis]
+        spectrogram=self.gen_spectogram(audio)[None,...,tf.newaxis]
+
 
         prediction = self.model(spectrogram)
 
