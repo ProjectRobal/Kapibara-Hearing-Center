@@ -1,6 +1,5 @@
-1.Radość - szybkie machanie uszami
-2.Strach - opuszczenie uszu w dół kąt -45 stopni
-3.Neutralność (kiedy żadna z emocji nie będzie dominować ) - uszy ustawione poziomo
-4.Gniew - ustawione pionowo pod kątem 45 stopni w przód
-5.Przyjemność - ustawione pod kątem 30 stopni
-6.Zaniepokojenie - ustawione pod kątem -15 stopni
+1.Strach - opuszczenie uszu w dół kąt -45 stopni
+2.Neutralność (kiedy żadna z emocji nie będzie dominować ) - uszy ustawione poziomo
+3.Gniew - ustawione pionowo pod kątem 45 stopni w przód
+4.Przyjemność - machanie uszami
+5.Zaniepokojenie - ustawione pod kątem -15 stopni

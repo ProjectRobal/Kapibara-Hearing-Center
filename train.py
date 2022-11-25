@@ -10,7 +10,7 @@ from kapibara_audio import KapibaraAudio
 model=KapibaraAudio()
 
 
-history = model.train("./Dataset")
+history = model.train("./Dataset",EPOCHS=50)
 
 metrics = history.history
 

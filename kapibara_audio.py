@@ -22,7 +22,15 @@ class KapibaraAudio:
     
         audio=[]
 
-        label=[]
+        neutral=[]
+
+        unsettling=[]
+
+        pleasent=[]
+
+        scary=[]
+
+        nervourses=[]
 
         with open(dir+"/"+file,"r") as f:
             headers=f.readline()
@@ -30,13 +38,25 @@ class KapibaraAudio:
                 objs=line.split(delimiter)
 
                 for i in range(1,len(objs)):
+                    objs[i]=objs[i].replace(',','.')
                     objs[i]=float(objs[i])
 
                 audio.append(objs[0])
 
-                label.append(tf.argmax(objs[1:]))
+                neutral.append(objs[1])
+
+                unsettling.append(objs[2])
+
+                pleasent.append(objs[3])
+
+                scary.append(objs[4])
+
+                nervourses.append(objs[5])
+
         
-        return (audio,label)
+        return (audio,(neutral,unsettling,pleasent,scary,nervourses))
+
+
 
 
     '''path - a path to dataset'''
@@ -59,14 +79,17 @@ class KapibaraAudio:
 
         train_ds=train_ds.batch(batch_size)
 
-        train_ds = train_ds.cache().prefetch(tf.data.AUTOTUNE)
+        train_ds = train_ds.take(1).cache().prefetch(tf.data.AUTOTUNE)
 
         valid_ds=train_ds.shuffle(batch_size,reshuffle_each_iteration=True)
 
         for spectrogram, _ in dataset.take(1):
             input_shape = spectrogram.shape
 
-        num_labels=len(self.answers)
+        #a root 
+        input_layer=layers.Input(shape=input_shape)
+
+        resizing=layers.Resizing(64,64)(input_layer)
 
         # Instantiate the `tf.keras.layers.Normalization` layer.
         norm_layer = layers.Normalization()
@@ -74,36 +97,71 @@ class KapibaraAudio:
         # with `Normalization.adapt`.
         norm_layer.adapt(data=dataset.map(map_func=lambda spec, label: spec))
 
-        model = models.Sequential([
-    layers.Input(shape=input_shape),
-    # Downsample the input.
-    layers.Resizing(64, 64),
-    # Normalize.
-    norm_layer,
-    layers.Conv2D(64, 3, activation='relu'),
-    layers.Conv2D(128, 3, activation='relu'),
-    layers.MaxPooling2D(),
-    layers.Dropout(0.25),
-    layers.Flatten(),
-    layers.Dense(128, activation='relu'),
-    layers.Dropout(0.5),
-    layers.Dense(num_labels),
-        ])
+        conv1=layers.Conv2D(64, 3, activation='relu')(resizing)
+
+        conv2=layers.Conv2D(128, 3, activation='relu')(conv1)
+
+        maxpool=layers.MaxPooling2D()(conv2)
+
+        dropout1=layers.Dropout(0.25)(maxpool)
+
+        root_output=layers.Flatten()(dropout1)
+
+        #output layers
+
+        neutral=layers.Dense(128, activation='relu')(root_output)
+
+        neutral1=layers.Dense(64, activation='relu')(neutral)
+
+        neutral_output=layers.Dense(1,activation='relu',name='neutral')(neutral1)
+
+        unsettling=layers.Dense(128, activation='relu')(root_output)
+
+        unsettling1=layers.Dense(64, activation='relu')(unsettling)
+
+        unsettling_output=layers.Dense(1,activation='relu',name='unsettling')(unsettling1)
+
+        pleasent=layers.Dense(128, activation='relu')(root_output)
+
+        pleasent1=layers.Dense(64, activation='relu')(pleasent)
+
+        pleasent_output=layers.Dense(1,activation='relu',name='pleasent')(pleasent1)
+
+        scary=layers.Dense(128, activation='relu')(root_output)
+
+        scary1=layers.Dense(64, activation='relu')(scary)
+
+        scary_output=layers.Dense(1,activation='relu',name='scary')(scary1)
+
+        nervourses=layers.Dense(128, activation='relu')(root_output)
+
+        nervourses1=layers.Dense(64, activation='relu')(nervourses)
+
+        nervourses_output=layers.Dense(1,activation='relu',name='nervourses')(nervourses1)
+
+        model=models.Model(inputs=input_layer,outputs=[neutral_output,unsettling_output,pleasent_output,scary_output,nervourses_output])
 
         model.summary()
 
         model.compile(
             optimizer=tf.keras.optimizers.Adam(),
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-            metrics=['accuracy'],
+            loss={'neutral':'mse', 
+            'unsettling':'mse',
+            'pleasent':'mse',
+            'scary':'mse',
+            'nervourses':'mse'},
+            metrics={'neutral':tf.keras.metrics.RootMeanSquaredError(), 
+            'unsettling':tf.keras.metrics.RootMeanSquaredError(),
+            'pleasent':tf.keras.metrics.RootMeanSquaredError(),
+            'scary':tf.keras.metrics.RootMeanSquaredError(),
+            'nervourses':tf.keras.metrics.RootMeanSquaredError()},
         )
 
         
         history = model.fit(
             train_ds,
             validation_data=valid_ds,
-            epochs=EPOCHS,
-            callbacks=tf.keras.callbacks.EarlyStopping(verbose=1, patience=2),
+            epochs=EPOCHS
             )
 
         model.save(save_path)
@@ -122,16 +180,21 @@ class KapibaraAudio:
         return spectrogram
 
     def get_result(self,prediction):
+        print(prediction)
 
-        prediction=prediction.numpy()[0]
-        print
-        max_v=max(prediction)
+        mean=0
 
-        for i in range(len(prediction)):
-            if prediction[i]==max_v:
-                return self.answers[i]
-        
-        return None
+        for p in prediction:
+            p=p.numpy()[0]
+            mean=mean+p
+
+        output=[]
+
+        for p in prediction:
+            p=p.numpy()[0]
+            output.append(p/mean)
+
+        return output
 
     '''audio - raw audio input'''
     def input(self,audio):
@@ -143,7 +206,7 @@ class KapibaraAudio:
         if audio.shape[0]>BUFFER_SIZE:
             audio=tf.slice(audio,0,BUFFER_SIZE)
 
-        spectrogram=self.gen_spectogram(audio)
+        spectrogram=self.gen_spectogram(audio)[None,..., tf.newaxis]
 
         prediction = self.model(spectrogram)
 

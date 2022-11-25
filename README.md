@@ -9,7 +9,6 @@ Model maszynowy który analizuję próbki dźwięku i decyduję czy dźwięk jes
 
 
 Uczucia Kapibary:
-- radość
 - strach[^1]
 - smutek
 - gniew
