@@ -6,6 +6,8 @@ from tensorflow.keras import models
 
 BUFFER_SIZE = 16000*2
 
+OUTPUTS=6
+
 
 class KapibaraAudio:
     '''path - a path to a model'''
@@ -24,13 +26,6 @@ class KapibaraAudio:
 
         neutral=[]
 
-        unsettling=[]
-
-        pleasent=[]
-
-        scary=[]
-
-        nervourses=[]
 
         with open(dir+"/"+file,"r") as f:
             headers=f.readline()
@@ -43,18 +38,10 @@ class KapibaraAudio:
 
                 audio.append(objs[0])
 
-                neutral.append(objs[1])
-
-                unsettling.append(objs[2])
-
-                pleasent.append(objs[3])
-
-                scary.append(objs[4])
-
-                nervourses.append(objs[5])
+                neutral.append(objs[1:])
 
         
-        return (audio,(neutral,unsettling,pleasent,scary,nervourses))
+        return (audio,neutral)
 
 
 
@@ -113,50 +100,21 @@ class KapibaraAudio:
 
         neutral=layers.Dense(128, activation='relu')(root_output)
 
-        neutral1=layers.Dense(64, activation='relu')(neutral)
+        n_dropout=layers.Dropout(0.5)(neutral)
 
-        neutral_output=layers.Dense(1,activation='relu',name='neutral')(neutral1)
+        neutral1=layers.Dense(64, activation='relu')(n_dropout)
 
-        unsettling=layers.Dense(128, activation='relu')(root_output)
+        neutral_output=layers.Dense(OUTPUTS,activation='softmax')(neutral1)
 
-        unsettling1=layers.Dense(64, activation='relu')(unsettling)
 
-        unsettling_output=layers.Dense(1,activation='relu',name='unsettling')(unsettling1)
-
-        pleasent=layers.Dense(128, activation='relu')(root_output)
-
-        pleasent1=layers.Dense(64, activation='relu')(pleasent)
-
-        pleasent_output=layers.Dense(1,activation='relu',name='pleasent')(pleasent1)
-
-        scary=layers.Dense(128, activation='relu')(root_output)
-
-        scary1=layers.Dense(64, activation='relu')(scary)
-
-        scary_output=layers.Dense(1,activation='relu',name='scary')(scary1)
-
-        nervourses=layers.Dense(128, activation='relu')(root_output)
-
-        nervourses1=layers.Dense(64, activation='relu')(nervourses)
-
-        nervourses_output=layers.Dense(1,activation='relu',name='nervourses')(nervourses1)
-
-        model=models.Model(inputs=input_layer,outputs=[neutral_output,unsettling_output,pleasent_output,scary_output,nervourses_output])
+        model=models.Model(inputs=input_layer,outputs=neutral_output)
 
         model.summary()
 
         model.compile(
             optimizer=tf.keras.optimizers.Adam(),
-            loss={'neutral':'mse', 
-            'unsettling':'mse',
-            'pleasent':'mse',
-            'scary':'mse',
-            'nervourses':'mse'},
-            metrics={'neutral':tf.keras.metrics.RootMeanSquaredError(), 
-            'unsettling':tf.keras.metrics.RootMeanSquaredError(),
-            'pleasent':tf.keras.metrics.RootMeanSquaredError(),
-            'scary':tf.keras.metrics.RootMeanSquaredError(),
-            'nervourses':tf.keras.metrics.RootMeanSquaredError()},
+            loss='mse',
+            metrics=tf.keras.metrics.RootMeanSquaredError()
         )
 
         
@@ -182,21 +140,8 @@ class KapibaraAudio:
         return spectrogram
 
     def get_result(self,prediction):
-        print(prediction)
 
-        mean=0
-
-        for p in prediction:
-            p=p.numpy()[0]
-            mean=mean+p
-
-        output=[]
-
-        for p in prediction:
-            p=p.numpy()[0]
-            output.append(p/mean)
-
-        return output
+        return prediction.numpy()[0]
 
     '''audio - raw audio input'''
     def input(self,audio):
