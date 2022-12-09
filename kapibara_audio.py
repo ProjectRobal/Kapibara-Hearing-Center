@@ -6,7 +6,7 @@ from tensorflow.keras import models
 
 BUFFER_SIZE = 16000*2
 
-OUTPUTS=6
+OUTPUTS=5
 
 
 class KapibaraAudio:
@@ -47,7 +47,7 @@ class KapibaraAudio:
 
 
     '''path - a path to dataset'''
-    def train(self,path,batch_size=32,EPOCHS = 100,file="train.csv",delimiter=";",save_path="./best_model"):
+    def train(self,path,batch_size=32,EPOCHS = 100,file="train.csv",valid="valid.csv",delimiter=";",save_path="./best_model"):
         
         files,labels = self.read_samples(path,file,delimiter)
 
@@ -68,7 +68,22 @@ class KapibaraAudio:
 
         train_ds = train_ds.take(1).cache().prefetch(tf.data.AUTOTUNE)
 
-        valid_ds=train_ds.shuffle(batch_size,reshuffle_each_iteration=True)
+        #validation dataset
+
+        files,labels = self.read_samples(path,valid,delimiter)
+
+        spectrograms.clear()
+
+        for file in files:
+            audio=self.load_wav(path+"/wavs/"+file+".wav")
+
+            spectrograms.append(self.gen_spectogram(audio))
+
+        valid_ds=tf.data.Dataset.from_tensor_slices((spectrograms,labels))
+
+        valid_ds=valid_ds.batch(batch_size)
+
+        valid_ds=valid_ds.take(1).cache().prefetch(tf.data.AUTOTUNE)
 
         for spectrogram, _ in dataset.take(1):
             input_shape = spectrogram.shape
@@ -100,9 +115,9 @@ class KapibaraAudio:
 
         neutral=layers.Dense(128, activation='relu')(root_output)
 
-        n_dropout=layers.Dropout(0.5)(neutral)
+        #n_dropout=layers.Dropout(0.5)(neutral)
 
-        neutral1=layers.Dense(64, activation='relu')(n_dropout)
+        neutral1=layers.Dense(64, activation='relu')(neutral)
 
         neutral_output=layers.Dense(OUTPUTS,activation='softmax')(neutral1)
 
@@ -113,8 +128,8 @@ class KapibaraAudio:
 
         model.compile(
             optimizer=tf.keras.optimizers.Adam(),
-            loss='mse',
-            metrics=tf.keras.metrics.RootMeanSquaredError()
+            loss=tf.keras.losses.MeanSquaredError(),
+            metrics=['accuracy']
         )
 
         
@@ -171,7 +186,7 @@ class KapibaraAudio:
             audio=tf.concat([audio,zeros],0)
 
         if audio.shape[0]>BUFFER_SIZE:
-            audio=tf.slice(audio,0,BUFFER_SIZE)
+            audio=tf.slice(audio,[0],[BUFFER_SIZE])
 
         audio=tf.cast(audio,dtype=tf.float32)
 

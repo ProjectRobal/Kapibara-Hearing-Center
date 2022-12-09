@@ -1,10 +1,22 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from scipy import signal
 
 from microphone import Microphone
 
 from kapibara_audio import KapibaraAudio
 
+import pyaudio
+import time
+
+'''
+To do:
+
+Filtr audio
+
+Przejrzeć dataset, (cisza go denerwuje), usuń ciszę z przykładowych dźwięków
+
+'''
 
 mic=Microphone(chunk=16000)
 
@@ -18,12 +30,20 @@ try:
 
         audio=tf.cast(audio,dtype=tf.float32)
 
+        #plt.plot(audio)
+
+        #plt.show()
+
         print(model.input(audio))
 
-        print("Press any key")
-        q=input()
+        time.sleep(2)
 
-        if q=='q':
-            break
+        #print("Press any key")
+        #q=input()
+
+
+
+        #if q=='q':
+        #    break
 except KeyboardInterrupt:
     print("Finished")
