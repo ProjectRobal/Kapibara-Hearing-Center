@@ -15,7 +15,7 @@ class KapibaraAudio:
         self.model=None
         if path is not None:
             self.model=tf.keras.models.load_model(path)
-        self.answers=['neutral','disturbing','unpleasent','pleasent','scary','irritanting']
+        self.answers=['neutral','disturbing','unpleasent','pleasent','scary']
         self.sample_rate=16000
         self.buffer_size=BUFFER_SIZE
 
@@ -37,8 +37,8 @@ class KapibaraAudio:
                     objs[i]=float(objs[i])
 
                 audio.append(objs[0])
-
-                neutral.append(objs[1:])
+                neutral.append(tf.argmax(objs[1:]))
+                
 
         
         return (audio,neutral)
@@ -52,6 +52,7 @@ class KapibaraAudio:
         files,labels = self.read_samples(path,file,delimiter)
 
         spectrograms=[]
+        
 
         for file in files:
             audio=self.load_wav(path+"/wavs/"+file+".wav")
@@ -66,7 +67,7 @@ class KapibaraAudio:
 
         train_ds=train_ds.batch(batch_size)
 
-        train_ds = train_ds.take(1).cache().prefetch(tf.data.AUTOTUNE)
+        train_ds = train_ds.cache().prefetch(tf.data.AUTOTUNE)
 
         #validation dataset
 
@@ -83,7 +84,7 @@ class KapibaraAudio:
 
         valid_ds=valid_ds.batch(batch_size)
 
-        valid_ds=valid_ds.take(1).cache().prefetch(tf.data.AUTOTUNE)
+        valid_ds=valid_ds.cache().prefetch(tf.data.AUTOTUNE)
 
         for spectrogram, _ in dataset.take(1):
             input_shape = spectrogram.shape
@@ -91,7 +92,7 @@ class KapibaraAudio:
         #a root 
         input_layer=layers.Input(shape=input_shape)
 
-        resizing=layers.Resizing(64,64)(input_layer)
+        resizing=layers.Resizing(96,96)(input_layer)
 
         # Instantiate the `tf.keras.layers.Normalization` layer.
         norm_layer = layers.Normalization()
@@ -101,7 +102,7 @@ class KapibaraAudio:
         
         norm_layer(resizing)
 
-        conv1=layers.Conv2D(64, 3, activation='relu')(resizing)
+        conv1=layers.Conv2D(96, 3, activation='relu')(resizing)
 
         conv2=layers.Conv2D(128, 3, activation='relu')(conv1)
 
@@ -115,11 +116,17 @@ class KapibaraAudio:
 
         neutral=layers.Dense(128, activation='relu')(root_output)
 
-        #n_dropout=layers.Dropout(0.5)(neutral)
+        dropout4=layers.Dropout(0.5)(neutral)
 
-        neutral1=layers.Dense(64, activation='relu')(neutral)
+        neutral1=layers.Dense(128, activation='relu')(dropout4)
 
-        neutral_output=layers.Dense(OUTPUTS,activation='softmax')(neutral1)
+        dropout3=layers.Dropout(0.5)(neutral1)
+
+        neutral2=layers.Dense(64, activation='relu')(dropout3)
+
+        dropout2=layers.Dropout(0.5)(neutral2)
+
+        neutral_output=layers.Dense(OUTPUTS,activation='softmax')(dropout2)
 
 
         model=models.Model(inputs=input_layer,outputs=neutral_output)
@@ -128,7 +135,7 @@ class KapibaraAudio:
 
         model.compile(
             optimizer=tf.keras.optimizers.Adam(),
-            loss=tf.keras.losses.MeanSquaredError(),
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             metrics=['accuracy']
         )
 
