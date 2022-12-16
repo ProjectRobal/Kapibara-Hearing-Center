@@ -15,7 +15,7 @@ class KapibaraAudio:
         self.model=None
         if path is not None:
             self.model=tf.keras.models.load_model(path)
-        self.answers=['neutral','disturbing','unpleasent','pleasent','scary']
+        self.answers=['neutral','unsettling','pleasent','scary','nervous']
         self.sample_rate=16000
         self.buffer_size=BUFFER_SIZE
 
@@ -116,13 +116,9 @@ class KapibaraAudio:
 
         neutral=layers.Dense(128, activation='relu')(root_output)
 
-        dropout4=layers.Dropout(0.5)(neutral)
+        neutral1=layers.Dense(128, activation='relu')(neutral)
 
-        neutral1=layers.Dense(128, activation='relu')(dropout4)
-
-        dropout3=layers.Dropout(0.5)(neutral1)
-
-        neutral2=layers.Dense(64, activation='relu')(dropout3)
+        neutral2=layers.Dense(64, activation='relu')(neutral1)
 
         dropout2=layers.Dropout(0.5)(neutral2)
 
@@ -163,7 +159,7 @@ class KapibaraAudio:
 
     def get_result(self,prediction):
 
-        return prediction.numpy()[0]
+        return self.answers[tf.argmax(prediction.numpy()[0])]
 
     '''audio - raw audio input'''
     def input(self,audio):
