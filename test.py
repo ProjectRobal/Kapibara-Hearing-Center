@@ -10,6 +10,7 @@ import pyaudio
 import numpy as np
 from scipy.signal import butter,filtfilt
 import time
+import noisereduce as nr
 
 '''
 To do:
@@ -36,7 +37,7 @@ def design_butter_lowpass_filter(cutoff,fs,order):
     return b,a
 
 
-b,a = design_butter_lowpass_filter(1000.0,16000.0,2)
+b,a = design_butter_lowpass_filter(1200.0,16000.0,2)
 
 
 
@@ -47,16 +48,30 @@ try:
 
         audio=mic.record(2)
 
-        audio=filtfilt(b,a,audio).astype(np.int16)
+        #plt.plot(audio)
 
-        speaker.write(audio,16000*2)
+        #plt.show()
+
+        audio=filtfilt(b,a,audio).astype(np.int16)/32767.0
+
+        #speaker.write((audio*32767).astype(np.int16),16000*2)
+
+        #plt.plot(audio)
+
+        #plt.show()
+
+        #audio=nr.reduce_noise(y=audio,sr=16000)
+
+        
 
         audio=tf.cast(audio,dtype=tf.float32)
 
         #plt.plot(audio)
 
         #plt.show()
+
         print("iteration: ",iteration)
+
         print(model.input(audio))
 
         time.sleep(2)
