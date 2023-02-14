@@ -1,10 +1,10 @@
 Model maszynowy który analizuję próbki dźwięku i decyduję czy dźwięk jest:
 
--straszny
--przyjemny
--wnerwiający (wywołujący agresję) - powodujący gniew
--neutralny
--niepokojący (naprzykład szum)
+- straszny
+- przyjemny
+- wnerwiający (wywołujący agresję) - powodujący gniew
+- neutralny
+- niepokojący (naprzykład szum)
 
 
 
