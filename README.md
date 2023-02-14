@@ -3,7 +3,7 @@ Model maszynowy który analizuję próbki dźwięku i decyduję czy dźwięk jes
 - straszny
 - przyjemny
 - wnerwiający (wywołujący agresję) - powodujący gniew
-- neutralny
+- neutralny (nie zmieniający nic)
 - niepokojący (naprzykład szum)
 
 
